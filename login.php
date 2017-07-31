@@ -39,26 +39,30 @@ if($_GET['action'] == "code"){//获取验证码
 	$totals = $rs['Message'];
 	//$totals = 10;
 
-	$url = "http://mis.xingshalong.com/member/member/GetPage?pageindex=1&pagesize=$totals&CardCategoryID=-1&TrueName=&Sex=-1&Mobile=&SourceType=-1&Level=-1&ShopID=$shopid&LastConsumeTime=-1&ConsumeSum=&HaveCard=&StoredCardBalance=&ConsumeTimes=&DebtAmount=&Birthday=&IsDelete=&IsLost=&deletetitle=";
-	$curl -> url = $url;
-	$data = $curl -> curl();
-	$data = json_decode($data,true);
 
-//    //总页数
-//    $pages = ceil($totals/500);
-//	for($i=1; $i<=$pages; $i++){
-//		$url = "http://mis.xingshalong.com/member/member/GetPage?pageindex=1&pagesize=$totals&CardCategoryID=-1&TrueName=&Sex=-1&Mobile=&SourceType=-1&Level=-1&ShopID=$shopid&LastConsumeTime=-1&ConsumeSum=&HaveCard=&StoredCardBalance=&ConsumeTimes=&DebtAmount=&Birthday=&IsDelete=&IsLost=&deletetitle=";
-//		$curl -> url = $url;
-//		$pagesData = $curl -> curl();
-//		$pagesData = json_decode($pagesData,true);
-//		$data .= $curl ->getMembersInfo($pagesData, $i);
-//		sleep(10);
-//	};
-
+	if($totals <= 1500){
+		$url = "http://mis.xingshalong.com/member/member/GetPage?pageindex=1&pagesize=$totals&CardCategoryID=-1&TrueName=&Sex=-1&Mobile=&SourceType=-1&Level=-1&ShopID=$shopid&LastConsumeTime=-1&ConsumeSum=&HaveCard=&StoredCardBalance=&ConsumeTimes=&DebtAmount=&Birthday=&IsDelete=&IsLost=&deletetitle=";
+		$curl -> url = $url;
+		$data = $curl -> curl();
+		$data = json_decode($data,true);
+	} else {
+		//总页数
+		$datapage = array();
+		$pages = ceil($totals/1500);
+		for($i=1; $i<=$pages; $i++){
+			$url = "http://mis.xingshalong.com/member/member/GetPage?pageindex=$i&pagesize=1500&CardCategoryID=-1&TrueName=&Sex=-1&Mobile=&SourceType=-1&Level=-1&ShopID=$shopid&LastConsumeTime=-1&ConsumeSum=&HaveCard=&StoredCardBalance=&ConsumeTimes=&DebtAmount=&Birthday=&IsDelete=&IsLost=&deletetitle=";
+			$curl -> url = $url;
+			$rs = $curl -> curl();
+			$rs = json_decode($rs,true);
+			foreach($rs['Data'] as $v){
+				$datapage[] = $v;
+			}
+		};
+		$data['Data'] = $datapage;
+	}
     if($data == '') {
         header('Location: index.php');
     }
-
 	$curl -> downMembersCvs($data, $shopname);
 }else if($_GET['action'] == 'curlpackage'){
     $shopname = $_REQUEST['shopname'];
