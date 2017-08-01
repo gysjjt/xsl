@@ -187,50 +187,45 @@ class curlapi{
      * @param $shopname
      */
 	public function downMembersCvs($data,$shopname){
-		foreach ($data['Data'] as $k => &$item) {
+		$k = 0;
+		foreach ($data['Data'] as &$item) {
 			//会员卡详情
 			$memberShopID = $item['MemberShopID'];
 			$this -> url = "http://cashier.xingshalong.com/WebApi/Api/v1/MemberCardApi/GetMeberCardList?memberShopID=$memberShopID&cardType=1";
 			$rs = $this -> curl();
 			$memberData = json_decode($rs,true);
 			if(isset($memberData['Data'][0]) && count($memberData['Data'][0]) > 0){
-				$memberData = $memberData['Data'][0];
+				foreach($memberData['Data'] as $member){
+					$memberData = $member;
+					//卡号
+					$other = $item;
+					$newdata[$k][0] = "\t".$memberData['MemberCardID']; //卡号
+					$newdata[$k][1] = $other['TrueName']; //姓名
+					$newdata[$k][2] = $other['Mobile']; //手机号
+					$newdata[$k][3] = $other['SexName']; //性别
 
-//				echo "<pre>";
-//				print_r($memberData);
-//				echo "</pre>";
-//
-//				echo "<pre>";
-//				print_r($item);
-//				echo "</pre>";
-//				exit;
+					//卡类型
+					$newdata[$k][4] = $memberData['MemberCardCategoryName']; //卡类型
 
-				//卡号
-				$other = $item;
-				$newdata[$k][0] = "\t".$memberData['MemberCardID']; //卡号
-				$newdata[$k][1] = $other['TrueName']; //姓名
-				$newdata[$k][2] = $other['Mobile']; //手机号
-				$newdata[$k][3] = $other['SexName']; //性别
+					$newdata[$k][5] = '10'; //折扣
 
-				//卡类型
-				$newdata[$k][4] = $memberData['MemberCardCategoryName']; //卡类型
+					//卡金余额信息,
+					$newdata[$k][6] = $memberData['NowAmount']; //卡金余额
+					$newdata[$k][12] = $other['DebtAmount']; //欠款
+					$newdata[$k][7] = $other['CumulativeRecharge']; //充值总额
+					$newdata[$k][9] = $other['ConsumeSum']; //消费总额
+					$newdata[$k][10] = $memberData['NowGiveAmount'];; //赠送金
+					$newdata[$k][8] = $other['ConsumeTimes']; //消费次数
+					$newdata[$k][11] = $other['PointsTotal']; //积分
+					$newdata[$k][13] = $other['CreateTimeText']; //开卡时间
 
-				$newdata[$k][5] = '10'; //折扣
-
-				//卡金余额信息,
-				$newdata[$k][6] = $memberData['NowAmount']; //卡金余额
-				$newdata[$k][12] = $other['DebtAmount']; //欠款
-				$newdata[$k][7] = $other['CumulativeRecharge']; //充值总额
-				$newdata[$k][9] = $other['ConsumeSum']; //消费总额
-				$newdata[$k][10] = $memberData['NowGiveAmount'];; //赠送金
-				$newdata[$k][8] = $other['ConsumeTimes']; //消费次数
-				$newdata[$k][11] = $other['PointsTotal']; //积分
-				$newdata[$k][13] = $other['CreateTimeText']; //开卡时间
-
-				$newdata[$k][14] = $other['LastConsumeTimeText']; //最后消费时间
-				$newdata[$k][15] = $other['BirthdayText']; //生日
-				$newdata[$k][16] = $other['BirthdayTypeName']=='公历'?1:0; //生日类型（1阳历，0阴历）
-				$newdata[$k][17] = ''; //会员备注
+					$newdata[$k][14] = $other['LastConsumeTimeText']; //最后消费时间
+					$newdata[$k][15] = $other['BirthdayText']; //生日
+					$newdata[$k][16] = $other['BirthdayTypeName']=='公历'?1:0; //生日类型（1阳历，0阴历）
+					$newdata[$k][17] = ''; //会员备注
+					ksort($newdata[$k]);
+					$k++;
+				}
 			} else {
 //				echo '无会员卡数据';
 //				echo "<pre>";
@@ -263,8 +258,9 @@ class curlapi{
 				$newdata[$k][15] = $other['BirthdayText']; //生日
 				$newdata[$k][16] = $other['BirthdayTypeName']=='公历'?1:0; //生日类型（1阳历，0阴历）
 				$newdata[$k][17] = ''; //会员备注
+				ksort($newdata[$k]);
 			}
-			ksort($newdata[$k]);
+			$k++;
 		}
 
 		//导出CVS
