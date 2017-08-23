@@ -194,6 +194,13 @@ class curlapi{
 			$this -> url = "http://cashier.xingshalong.com/WebApi/Api/v1/MemberCardApi/GetMeberCardList?memberShopID=$memberShopID&cardType=1";
 			$rs = $this -> curl();
 			$memberData = json_decode($rs,true);
+
+			//备注
+			$this -> url = "http://cashier.xingshalong.com/WebApi/Api/v1/ShopApi/GetMeberShopQuery?memberShopID=$memberShopID";
+			$rs = $this -> curl();
+			$MemoData = json_decode($rs,true);
+			$memo = isset($MemoData['Data']['Memo'])?$MemoData['Data']['Memo']:'';
+
 			if(isset($memberData['Data'][0]) && count($memberData['Data'][0]) > 0){
 				foreach($memberData['Data'] as $member){
 					$memberData = $member;
@@ -222,7 +229,7 @@ class curlapi{
 					$newdata[$k][14] = $other['LastConsumeTimeText']; //最后消费时间
 					$newdata[$k][15] = $other['BirthdayText']; //生日
 					$newdata[$k][16] = $other['BirthdayTypeName']=='公历'?1:0; //生日类型（1阳历，0阴历）
-					$newdata[$k][17] = ''; //会员备注
+					$newdata[$k][17] = $memo; //会员备注
 					ksort($newdata[$k]);
 					$k++;
 				}
