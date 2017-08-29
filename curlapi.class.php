@@ -338,64 +338,52 @@ class curlapi{
      * @param $html
      * @param $shopname
      */
-    public function downPackageCvs($html,$shopname){
-		$rules = array(
-			//采集tr中的纯文本内容
-			'other' => array('tr','html'),
-		);
-		$newdata = array();
-		$data = QueryList::Query($html, $rules)->data;
-		foreach ($data as $k=>&$item) {
-			$other = explode('</td>', $item['other']);
-			if(count($other) > 8) {
-				//unset($other[0]);//去掉第一空白项
-				$item['other'] = $other;
-				foreach ($other as $k1 => &$v1) {
-					$v1 = strip_tags($v1);;
-					$v1 = preg_replace("/\s\n\t/","",$v1);
-					$v1 = str_replace(' ', '', $v1);
-					$v1= trim(str_replace(PHP_EOL, '', $v1));
-					if($k1 == 5) {
-						$v1 = trim(str_replace(',', '，', $v1));
-						$v1 = explode('项目编号:', $v1);
-						unset($v1[0]);
+    public function downPackageCvs($data,$shopname){
+		
+		$k = 0;
+		foreach ($data['Data'] as &$item) {
+			//会员卡详情
+			$memberShopID = $item['MemberShopID'];
+			$this -> url = "http://cashier.xingshalong.com/WebApi/Api/v1/MemberCardApi/GetMeberCardList?memberShopID=$memberShopID&cardType=1";
+			$rs = $this -> curl();
+			$memberData = json_decode($rs,true);
+
+			//记次疗程卡
+			$memberShopID = $item['MemberShopID'];
+			$this -> url = "http://cashier.xingshalong.com/WebApi/Api/v1/MemberCardApi/GetMetering?memberShopID=$memberShopID";
+			$rs = $this -> curl();
+			$packageData = json_decode($rs,true);
+
+			if(isset($packageData['Data'][0]) && count($packageData['Data'][0]) > 0){
+				foreach($packageData['Data'] as $package){
+					foreach ($package['ServiceItemList'] as $ServiceItemList){
+						$memberData = $memberData['Data'][0];
+						//卡号
+						$other = $item;
+						$newdata[$k][0] = $other['Mobile']; //手机号
+						$newdata[$k][1] = "\t".$memberData['MemberCardID']; //卡号
+						$newdata[$k][2] = $other['TrueName']; //姓名
+
+						$newdata[$k][3] = ''; //卡名称
+						$newdata[$k][4] = $memberData['MemberCardCategoryName']; //卡类型
+						//卡金余额信息,
+						$newdata[$k][5] = $ServiceItemList['ServiceItemID'];//项目编号
+						$newdata[$k][6] = $ServiceItemList['ServiceItemName'];//项目名称
+						$newdata[$k][7] = $ServiceItemList['Times']+$ServiceItemList['ConsumeTimes'];//总次数
+						$newdata[$k][8] = $ServiceItemList['Times'];//剩余次数
+						$newdata[$k][9] = $ServiceItemList['SalePrice']; //单次消费金额
+						$newdata[$k][10] = $ServiceItemList['SalePrice']*$ServiceItemList['Times']; //剩余金额
+						$newdata[$k][11] = $ServiceItemList['ExpiredDateStr'];//失效日期
+						$newdata[$k][12] = $ServiceItemList['Times'];//总剩余次数
+						$newdata[$k][13] = $ServiceItemList['SalePrice']*$ServiceItemList['Times']; //总剩余金额
+						$newdata[$k][14] = '';
+						ksort($newdata[$k]);
+						$k++;
 					}
-				}
-
-				foreach($other[5] as $k2=>$v2) {
-					$newA[0] = $other[0]; //手机号
-					$newA[1] = "\t".$other[1]; //卡号
-					$newA[2] = $other[2]; //姓名
-					$newA[3] = $other[3]; //卡名称
-					$newA[4] = $other[4]; //卡类型
-
-					$v2 .= "#";
-					//获取项目套餐信息
-					preg_match('/(.*)，项目名称/isU', $v2, $p1);  //项目编号
-					preg_match('/项目名称:(.*)，/isU', $v2, $p2);  //项目名称
-					preg_match('/总次数:(.*)，/isU', $v2, $p3);  //总次数
-					preg_match('/剩余次数:(.*)，/isU', $v2, $p4);  //剩余次数
-					preg_match('/单次消费金额:(.*)，/isU', $v2, $p5);  //单次消费金额
-					preg_match('/剩余金额:(.*)#/isU', $v2, $p6);  //剩余金额
-                    if(!isset($p6[1])) {
-                        preg_match('/剩余金额:(.*)，/isU', $v2, $p6);  //剩余金额
-                    }
-					preg_match('/失效日期：(.*)#/isU', $v2, $p7);  //失效日期
-					$newA[5] = isset($p1[1])?$p1[1]:' ';//项目编号
-					$newA[6] = isset($p2[1])?$p2[1]:' ';//项目名称
-					$newA[7] = isset($p3[1])?$p3[1]:' ';//总次数
-					$newA[8] = isset($p4[1])?$p4[1]:' ';//剩余次数
-					$newA[9] = isset($p5[1])?$p5[1]:' '; //单次消费金额
-					$newA[10] = isset($p6[1])?$p6[1]:' '; //剩余金额
-					$newA[11] = isset($p7[1])?$p7[1]:' ';//失效日期
-
-					$newA[12] = $newA[8];//总剩余次数
-					$newA[13] = $newA[10]; //总剩余金额
-					$newA[14] = $other[8];
-					$newdata[] = $newA;
 				}
 			}
 		}
+
 		//导出CVS
 		$cvsstr = "手机号,卡号,姓名,卡名称,卡类型,项目编号,项目名称,总次数,剩余次数,单次消费金额,剩余金额,失效日期,总剩余次数,总剩余金额\n";
 		$filename = $shopname.'_会员套餐信息.csv';

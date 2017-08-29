@@ -65,27 +65,42 @@ if($_GET['action'] == "code"){//获取验证码
     }
 	$curl -> downMembersCvs($data, $shopname);
 }else if($_GET['action'] == 'curlpackage'){
-    $shopname = $_REQUEST['shopname'];
-    $data = '';
+	$shopname = $_REQUEST['shopname'];
+	$data = '';
 
-    //获取总数
-    $curl -> url = "http://vip8.sentree.com.cn/shair/timesItem!initTreat.action?set=cash";
-    $rs = $curl -> curl();
-    preg_match('/共(.*)条/isU', $rs, $totals);
-    $totals = isset($totals[1])?$totals[1]:100;
+	//获取总数
+	$shopid = ceil($_SESSION['shopid']);
+	$url = "http://mis.xingshalong.com/member/member/GetPage?pageindex=1&pagesize=1&CardCategoryID=-1&TrueName=&Sex=-1&Mobile=&SourceType=-1&Level=-1&ShopID=$shopid&LastConsumeTime=-1&ConsumeSum=&HaveCard=&StoredCardBalance=&ConsumeTimes=&DebtAmount=&Birthday=&IsDelete=&IsLost=&deletetitle=";
+	$curl -> url = $url;
+	$rs = $curl -> curl();
+	$rs = json_decode($rs,true);
+	$totals = $rs['Message'];
+	//$totals = 10;
 
-	//总页数
-    $pages = ceil($totals/100);
-    for($i=1; $i<=$pages; $i++){
-        $params = "page.currNum=$i&page.rpp=100&set=cash&r=0.3421386775783387";
-        $curl -> params = $params;
-        $curl -> url = "http://vip8.sentree.com.cn/shair/timesItem!initTreat.action";
-        $pagesData = $curl -> getPackagePage();
-        $data .= $curl ->getPackageInfo($pagesData, $i);
-    };
-    if($data == '') {
-        header('Location: index.php');
-    }
+
+	if($totals <= 1500){
+		$url = "http://mis.xingshalong.com/member/member/GetPage?pageindex=1&pagesize=$totals&CardCategoryID=-1&TrueName=&Sex=-1&Mobile=&SourceType=-1&Level=-1&ShopID=$shopid&LastConsumeTime=-1&ConsumeSum=&HaveCard=&StoredCardBalance=&ConsumeTimes=&DebtAmount=&Birthday=&IsDelete=&IsLost=&deletetitle=";
+		$curl -> url = $url;
+		$data = $curl -> curl();
+		$data = json_decode($data,true);
+	} else {
+		//总页数
+		$datapage = array();
+		$pages = ceil($totals/1500);
+		for($i=1; $i<=$pages; $i++){
+			$url = "http://mis.xingshalong.com/member/member/GetPage?pageindex=$i&pagesize=1500&CardCategoryID=-1&TrueName=&Sex=-1&Mobile=&SourceType=-1&Level=-1&ShopID=$shopid&LastConsumeTime=-1&ConsumeSum=&HaveCard=&StoredCardBalance=&ConsumeTimes=&DebtAmount=&Birthday=&IsDelete=&IsLost=&deletetitle=";
+			$curl -> url = $url;
+			$rs = $curl -> curl();
+			$rs = json_decode($rs,true);
+			foreach($rs['Data'] as $v){
+				$datapage[] = $v;
+			}
+		};
+		$data['Data'] = $datapage;
+	}
+	if($data == '') {
+		header('Location: index.php');
+	}
     $curl -> downPackageCvs($data, $shopname);
 }else if($_GET['action'] == 'curlstaff'){
 	$shopname = $_REQUEST['shopname'];
